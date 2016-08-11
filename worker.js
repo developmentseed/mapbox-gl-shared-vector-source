@@ -47,6 +47,7 @@ SharedVectorWorker.prototype = {
     if (cached) {
       var vt = new CachedVectorTile(cached.tile)
       var data = cached.buffer.slice(0)
+      console.log('cache hit', vt)
       var timer = setTimeout(done.bind(this), 0, null, data, vt)
       tile.abort = function () { clearTimeout(timer) }
     } else {
@@ -62,7 +63,7 @@ SharedVectorWorker.prototype = {
       } else {
         vt = new VectorTile(new Protobuf(new Uint8Array(rawTileData)))
         cache.set(params.url, {
-          tile: new CachedVectorTile(vt),
+          tile: new CachedVectorTile(vt).serialize(),
           buffer: rawTileData.slice(0)
         })
       }

@@ -11,6 +11,7 @@
   "author": "Anand Thakker <vestibule@anandthakker.net> (http://anandthakker.net/)",
   "license": "ISC",
   "devDependencies": {
+    "benchmark": "^2.1.1",
     "budo": "^8.3.0",
     "deep-diff": "^0.3.4",
     "documentation": "^4.0.0-beta9",

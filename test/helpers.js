@@ -1,9 +1,13 @@
 var assert = require('assert')
+var test = require('tap').test
+
+test('setup', function (t) { t.end() })
 
 module.exports.tilesEqual = tilesEqual
 // assert that the two tiles are (deep) clones of one another
 function tilesEqual (tile, cachedTile) {
   assert(tile && tile.layers)
+  assert.deepEqual(Object.keys(tile.layers), Object.keys(cachedTile.layers))
   for (var id in tile.layers) {
     var layer = tile.layers[id]
     var cachedLayer = cachedTile.layers[id]
