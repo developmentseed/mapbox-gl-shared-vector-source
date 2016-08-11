@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "tap test"
+    "test": "tap test",
+    "start": "budo example/index.js:bundle.js --dir example --dir ."
   },
   "keywords": [],
   "author": "Anand Thakker <vestibule@anandthakker.net> (http://anandthakker.net/)",
