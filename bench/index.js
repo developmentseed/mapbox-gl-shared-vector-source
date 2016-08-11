@@ -12,19 +12,21 @@ var serialized = cloned.serialize()
 
 var suite = new Benchmark.Suite()
 
+console.log('After construction, loadGeometry() is called on every feature in the tile.')
+
 /* eslint-disable no-new */
 suite
-.add('new VectorTile(new Protobuf(pbf))', function () {
-  loadAllGeometries(new VectorTile(new Protobuf(buf)))
-})
-.add('new CachedVectorTile(vectorTile)', function () {
+.add('new CachedVectorTile(vt: VectorTile)', function () {
   loadAllGeometries(new CachedVectorTile(parsed))
 })
-.add('new CachedVectorTile(cachedVectorTile)', function () {
+.add('new CachedVectorTile(vt: CachedVectorTile)', function () {
   loadAllGeometries(new CachedVectorTile(cloned))
 })
-.add('new CachedVectorTile(plainJsObject)', function () {
+.add('new CachedVectorTile(vt: plain JS object)', function () {
   loadAllGeometries(new CachedVectorTile(serialized))
+})
+.add('new VectorTile(new Protobuf(pbf))', function () {
+  loadAllGeometries(new VectorTile(new Protobuf(buf)))
 })
 .on('cycle', function (event) {
   console.log(String(event.target))
