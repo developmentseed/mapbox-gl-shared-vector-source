@@ -3,6 +3,9 @@
 A custom vector tile source for mapbox-gl that caches and shares parsed vector
 tiles across Map instances.
 
+**NOTE:** This relies on an as-yet-unmerged branch of mapbox-gl-js: https://github.com/mapbox/mapbox-gl-js/pull/2952
+
+
 ## example
 
 Clone, `npm install`, run `npm start`, and open http://localhost:9966/.
