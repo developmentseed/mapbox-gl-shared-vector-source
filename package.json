@@ -1,0 +1,31 @@
+{
+  "name": "mapbox-gl-shared-vector-source",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "tap test"
+  },
+  "keywords": [],
+  "author": "Anand Thakker <vestibule@anandthakker.net> (http://anandthakker.net/)",
+  "license": "ISC",
+  "devDependencies": {
+    "budo": "^8.3.0",
+    "deep-diff": "^0.3.4",
+    "documentation": "^4.0.0-beta9",
+    "eslint": "^3.2.2",
+    "eslint-config-standard": "^5.3.5",
+    "eslint-plugin-promise": "^2.0.1",
+    "eslint-plugin-standard": "^2.0.0",
+    "mapbox-gl": "github:developmentseed/mapbox-gl-js#d3d0787c835af4b10201bde0d0f7a020011b2da3",
+    "mapbox-gl-styles": "^2.0.2",
+    "tap": "^6.3.0"
+  },
+  "dependencies": {
+    "lru-cache": "^4.0.1",
+    "pbf": "^2.0.1",
+    "point-geometry": "0.0.0",
+    "vector-tile": "^1.3.0",
+    "webworkify": "^1.3.0"
+  }
+}

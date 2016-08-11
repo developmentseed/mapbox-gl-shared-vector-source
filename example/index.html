@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mapbox GL JS debug page</title>
+    <meta charset='utf-8'>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
+    <link rel='stylesheet' href='../node_modules/mapbox-gl/dist/mapbox-gl.css' />
+    <style>
+        body { margin: 0; padding: 0; }
+        .map { height: 300px; width: 300px; display: inline-block; }
+    </style>
+</head>
+
+<body>
+
+<script>
+window.getAccessToken = function () {
+    var accessToken = (
+        getURLParameter('access_token') ||
+        localStorage.getItem('accessToken')
+    );
+    localStorage.setItem('accessToken', accessToken);
+    return accessToken;
+}
+
+function getURLParameter(name) {
+    var regexp = new RegExp('[?&]' + name + '=([^&#]*)', 'i');
+    var output = regexp.exec(window.location.href);
+    return output && output[1];
+}
+</script>
+<script src='bundle.js'></script>
+
+</body>
+</html>
