@@ -1,13 +1,9 @@
 var mapboxgl = require('mapbox-gl')
-var stylesheet = require('mapbox-gl-styles/styles/bright-v9.json')
 
 var SharedVectorSource = require('../')
 
 mapboxgl.accessToken = window.getAccessToken()
-
-var empty = Object.assign({}, stylesheet)
-empty.sources = {}
-empty.layers = []
+mapboxgl.Source.addType('vector-shared-dynamic', SharedVectorSource)
 
 window.testHelpers = require('../test/helpers')
 var deepdiff = require('deep-diff').diff
@@ -23,51 +19,59 @@ window.diff = function (o1, o2) {
 }
 
 createMap(true)
-window.addEventListener('click', function () { createMap(false) })
+// window.addEventListener('click', function () { createMap(false) })
 
-function createMap (addSourceType) {
+function createMap () {
   var div = document.createElement('div')
   div.className = 'map'
   document.body.appendChild(div)
 
-  console.time('map load')
   var map = new mapboxgl.Map({
     container: div,
-    zoom: 12.5,
-    center: [-77.01866, 38.888],
-    style: empty,
+    zoom: 0,
+    center: [0, 0],
+    style: {
+      version: 8,
+      glyphs: 'mapbox://fonts/devseed/{fontstack}/{range}.pbf',
+      sources: {},
+      layers: [{
+        id: 'background',
+        type: 'background',
+        paint: { 'background-color': '#003333' }
+      }]
+    },
     workerCount: 1
   })
-
-  map.on('load', function () {
-    if (addSourceType) {
-      map.addSourceType('vector-shared', SharedVectorSource, function (err) {
-        if (err) { return console.error(err) }
-        setStyle()
-      })
-    } else {
-      setStyle()
-    }
-  })
-
-  return map
-
-  function setStyle () {
-    for (var id in stylesheet.sources) {
-      if (stylesheet.sources[id].type === 'vector') {
-        stylesheet.sources[id].type = 'vector-shared'
-      }
-      map.addSource(id, stylesheet.sources[id])
-    }
-    stylesheet.layers
-      .filter(function (layer) { return !map.getLayer(layer.id) })
-      .map(function (layer) { return map.addLayer(layer) })
-
-    map.on('render', function () {
-      if (map.loaded()) {
-        console.timeEnd('map load')
-        map.off('render')
+  .on('load', function () {
+    map.addSource('us', {
+      type: 'vector-shared-dynamic',
+      url: 'http://localhost:8080/index.json'
+    })
+    map.addLayer({
+      id: 'states',
+      type: 'fill',
+      source: 'us',
+      'source-layer': 'states',
+      paint: {
+        'fill-color': {
+          property: 'x',
+          stops: [
+            [0, '#888888'],
+            [100, '#ffff00']
+          ]
+        },
+        'fill-outline-color': '#440033'
       }
     })
-  }
+  })
+  .on('click', function (e) {
+    var f = map.queryRenderedFeatures(e.point, { layers: ['states'] })
+    if (!f[0]) return
+    f = f[0]
+    var data = {}
+    data[f.id] = { x: Math.random() * 100 }
+    map.getSource('us').update(data)
+    console.log(f)
+  })
+  return map
 }

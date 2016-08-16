@@ -17,6 +17,7 @@ function SharedVectorWorker (actor, styleLayers) {
   this.actor = actor
   this.styleLayers = styleLayers
   this.loading = {}
+  this.loaded = {}
 }
 
 SharedVectorWorker.prototype = {
@@ -69,7 +70,22 @@ SharedVectorWorker.prototype = {
       }
 
       tile.parse(vt, this.styleLayers.getLayerFamilies(), this.actor, rawTileData, callback)
+      this.loaded[source] = this.loaded[source] || {}
+      this.loaded[source][uid] = tile
     }
+  },
+
+  updateTile: function (params, callback) {
+    var source = params.source
+    var uid = params.uid
+    if (!this.loaded[source] || !this.loaded[source][uid]) {
+      return callback()
+    }
+
+    var layerFamilies = this.styleLayers.getLayerFamilies()
+    var tile = this.loaded[source][uid]
+    debugger
+    tile.updateProperties(params.data, layerFamilies, this.actor, callback)
   },
 
   reloadTile: function (params, callback) {
@@ -86,13 +102,11 @@ SharedVectorWorker.prototype = {
   },
 
   removeTile: function (params) {
-  },
-
-  /**
-   * @param {object} params
-   * @param {string} params.url The URL of the tile PBF to load.
-   */
-  loadVectorData: function (params, callback) {
+    var source = params.source
+    var uid = params.uid
+    if (this.loaded[source] && this.loaded[source][uid]) {
+      delete this.loaded[source][uid]
+    }
   }
 }
 

@@ -19,7 +19,7 @@
     "eslint-config-standard": "^5.3.5",
     "eslint-plugin-promise": "^2.0.1",
     "eslint-plugin-standard": "^2.0.0",
-    "mapbox-gl": "github:developmentseed/mapbox-gl-js#d3d0787c835af4b10201bde0d0f7a020011b2da3",
+    "mapbox-gl": "github:developmentseed/mapbox-gl-js#wapo",
     "mapbox-gl-styles": "^2.0.2",
     "tap": "^6.3.0"
   },
