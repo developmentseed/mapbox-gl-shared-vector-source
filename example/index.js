@@ -63,18 +63,16 @@ function createMap () {
         'fill-outline-color': '#440033'
       }
     })
+    setInterval(function () {
+      var data = {}
+      var i = Math.round(Math.random() * 50)
+      data[i] = { x: Math.random() * 100 }
+      map.getSource('us').update(data)
+    }, 50)
   })
   .on('click', function () {
-    map.setFilter('states', ['<', '$id', Math.random() > 0.5 ? 25 : 100])
+    map.setFilter('states', ['<', '$id', Math.random() * 100])
   })
 
-  setInterval(function () {
-    var data = {}
-    for (var i = 0; i < 100; i++) {
-      data[i] = { x: Math.random() * 100 }
-    }
-    console.log('update', data)
-    map.getSource('us').update(data)
-  }, 1000)
   return map
 }

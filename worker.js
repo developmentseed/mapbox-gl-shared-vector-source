@@ -37,6 +37,7 @@ SharedVectorWorker.prototype = {
    * @param {boolean} params.showCollisionBoxes
    */
   loadTile: function (params, callback) {
+    this.updatePropertyData(params.proprtyData)
     var source = params.source
     var uid = params.uid
 
@@ -48,9 +49,8 @@ SharedVectorWorker.prototype = {
 
     var cached = cache.get(params.url)
     if (cached) {
-      var vt = new CachedVectorTile(cached.tile)
+      var vt = new CachedVectorTile(cached.tile, this._propertyData)
       var data = cached.buffer.slice(0)
-      console.log('cache hit', vt)
       var timer = setTimeout(done.bind(this), 0, null, data, vt)
       tile.abort = function () { clearTimeout(timer) }
     } else {
@@ -62,10 +62,9 @@ SharedVectorWorker.prototype = {
       if (err) { return callback(err) }
       var vt
       if (cachedTile) {
-        vt = new CachedVectorTile(cachedTile)
+        vt = new CachedVectorTile(cachedTile, this._propertyData)
       } else {
-        vt = new CachedVectorTile(new VectorTile(new Protobuf(new Uint8Array(rawTileData))))
-        console.log(vt.serialize())
+        vt = new CachedVectorTile(new VectorTile(new Protobuf(new Uint8Array(rawTileData))), this._propertyData)
         cache.set(params.url, {
           tile: vt.serialize(),
           buffer: rawTileData.slice(0)
@@ -80,8 +79,11 @@ SharedVectorWorker.prototype = {
   },
 
   updateTile: function (params, callback) {
+    this.updatePropertyData(params.propertyData)
+
     var source = params.source
     var uid = params.uid
+
     if (!this.loaded[source] || !this.loaded[source][uid]) {
       return callback()
     }
@@ -99,8 +101,8 @@ SharedVectorWorker.prototype = {
       propertyData[layerId] = []
       for (var i = 0; i < layers[layerId].length; i++) {
         var id = layers[layerId].feature(i).id
-        if (typeof id !== 'undefined' && params.propertyData[id]) {
-          propertyData[layerId].push(params.propertyData[id])
+        if (typeof id !== 'undefined') {
+          propertyData[layerId].push(this.getProperties(id))
         } else {
           propertyData[layerId].push(null)
         }
@@ -143,6 +145,23 @@ SharedVectorWorker.prototype = {
     var uid = params.uid
     if (this.loaded[source] && this.loaded[source][uid]) {
       delete this.loaded[source][uid]
+    }
+  },
+
+  getProperties: function (id) {
+    return this._propertyData && this._propertyData[id]
+  },
+
+  updatePropertyData: function (propertyData) {
+    if (!this._propertyData) {
+      this._propertyData = {}
+    }
+    if (propertyData) {
+      for (var id in propertyData) {
+        if (typeof propertyData[id] !== 'undefined') {
+          this._propertyData[id] = propertyData[id]
+        }
+      }
     }
   },
 
