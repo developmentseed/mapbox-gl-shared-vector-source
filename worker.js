@@ -6,6 +6,8 @@ var WorkerTile = require('mapbox-gl/js/source/worker_tile')
 var LRU = require('lru-cache')
 var CachedVectorTile = require('./lib/vectortile.js')
 
+var hash = require('./lib/object-hash')
+
 var cache = LRU({
   max: 1 + 4 + 16 + 64,
   length: function (tile) { return 1 }
@@ -71,6 +73,7 @@ SharedVectorWorker.prototype = {
       }
 
       tile.parse(vt, this.style.getLayerFamilies(), this.actor, rawTileData, callback)
+      tile._style = this.getStyleHash()
       this.loaded[source] = this.loaded[source] || {}
       this.loaded[source][uid] = tile
     }
@@ -104,11 +107,26 @@ SharedVectorWorker.prototype = {
       }
     }
 
-    tile.updateProperties(propertyData, layerFamilies, this.actor, callback)
+    tile.updateProperties(propertyData, layerFamilies, this.actor, done.bind(this))
+
+    function done (err, data, buffers) {
+      if (err) { return callback(err) }
+      data.action = 'update-properties'
+      callback(err, data, buffers)
+    }
   },
 
   reloadTile: function (params, callback) {
-    return this.loadTile(params, callback)
+    var source = params.source
+    var uid = params.uid
+    var style = this.getStyleHash()
+    var tile = this.loaded[source] && this.loaded[source][uid]
+    if (params.propertyData && tile && tile._style === style) {
+      // just update the properties, because the style hasn't changed
+      this.updateTile(params, callback)
+    } else {
+      this.loadTile(params, callback)
+    }
   },
 
   abortTile: function (params) {
@@ -126,6 +144,15 @@ SharedVectorWorker.prototype = {
     if (this.loaded[source] && this.loaded[source][uid]) {
       delete this.loaded[source][uid]
     }
+  },
+
+  getStyleHash: function () {
+    var serialized = {}
+    var layerFamilies = this.style.getLayerFamilies()
+    for (var k in layerFamilies) {
+      var parent = layerFamilies[k][0]
+      serialized[k] = parent.serialize()
+    }
+    return hash(serialized)
   }
 }
-

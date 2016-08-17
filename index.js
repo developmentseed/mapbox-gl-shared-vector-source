@@ -25,10 +25,6 @@ SharedVectorSource.prototype = util.inherit(VectorSource, {
   },
 
   loadTile: function (tile, callback) {
-    if (this._data && tile.state === 'reloading') {
-      return this.updateTile(tile, callback)
-    }
-
     var overscaling = tile.coord.z > this.maxzoom ? Math.pow(2, tile.coord.z - this.maxzoom) : 1
     var params = {
       type: this.type,
@@ -41,7 +37,8 @@ SharedVectorSource.prototype = util.inherit(VectorSource, {
       overscaling: overscaling,
       angle: this.map.transform.angle,
       pitch: this.map.transform.pitch,
-      showCollisionBoxes: this.map.showCollisionBoxes
+      showCollisionBoxes: this.map.showCollisionBoxes,
+      propertyData: this._filterPropertiesForTile(tile)
     }
 
     if (!tile.workerID) {
@@ -65,63 +62,59 @@ SharedVectorSource.prototype = util.inherit(VectorSource, {
         return callback(err)
       }
 
-      tile.loadVectorData(data, this.map.style)
-
-      // we need to parse the VT now, so might as well save it for use by the
-      // feature index during query*Features
-      this.vtLayers = new vt.VectorTile(new Protobuf(new Uint8Array(tile.rawTileData))).layers
-
-      // store the feature id's for each feature in this vector tile.
-      // tileFeatures = {
-      //    [tile uid]: {
-      //        [vt layer id]: [feature id, feature id, ... ]
-      //    }
-      // }
-      var layers = this.tileFeatures[tile.uid] = {}
-      for (var id in this.vtLayers) {
-        var features = layers[id] = []
-        var layer = this.vtLayers[id]
-        for (var i = 0; i < layer.length; i++) {
-          var feature = layer.feature(i)
-          features.push(feature.id)
-        }
+      if (data.action === 'update-properties') {
+        return this._handleTileUpdate(tile, data, callback)
       }
 
-      if (tile.redoWhenDone) {
-        tile.redoWhenDone = false
-        tile.redoPlacement(this)
-      }
-
-      if (this._data) {
-        this.updateTile(tile, callback)
-        return
-      }
-
-      callback(null)
+      this._handleTileLoad(tile, data, callback)
     }
   },
 
-  updateTile: function (tile, callback) {
-    var params = {
-      uid: tile.uid,
-      source: this.id,
-      propertyData: this._filterPropertiesForTile(tile)
-    }
+  _handleTileLoad: function (tile, data, callback) {
+    tile.loadVectorData(data, this.map.style)
 
-    this.dispatcher.send(this.type + '.updateTile', params, done.bind(this), tile.workerID)
+    // we need to parse the VT now, so might as well save it for use by the
+    // feature index during query*Features
+    this.vtLayers = new vt.VectorTile(new Protobuf(new Uint8Array(tile.rawTileData))).layers
 
-    function done (err, data) {
-      for (var i = 0; i < data.buckets.length; i++) {
-        var updatedBucket = data.buckets[i]
-        var existingBucket = tile.buckets[updatedBucket.layerId]
-        existingBucket.updatePaintVertexBuffers(updatedBucket.arrays)
+    // store the feature id's for each feature in this vector tile.
+    // tileFeatures = {
+    //    [tile uid]: {
+    //        [vt layer id]: [feature id, feature id, ... ]
+    //    }
+    // }
+    var layers = this.tileFeatures[tile.uid] = {}
+    for (var id in this.vtLayers) {
+      var features = layers[id] = []
+      var layer = this.vtLayers[id]
+      for (var i = 0; i < layer.length; i++) {
+        var feature = layer.feature(i)
+        features.push(feature.id)
       }
-      callback(err)
     }
+
+    if (tile.redoWhenDone) {
+      tile.redoWhenDone = false
+      tile.redoPlacement(this)
+    }
+
+    callback(null)
+  },
+
+  _handleTileUpdate: function (tile, data, callback) {
+    // if the worker did a properties-only update, then we should only update
+    // the paint vertex buffers
+    for (var i = 0; i < data.buckets.length; i++) {
+      var updatedBucket = data.buckets[i]
+      var existingBucket = tile.buckets[updatedBucket.layerId]
+      existingBucket.updatePaintVertexBuffers(updatedBucket.arrays)
+    }
+    return callback()
   },
 
   _filterPropertiesForTile: function (tile) {
     // copy the subset of the data needed for this tile
+    if (!this._data || !this.tileFeatures[tile.uid]) { return null }
     var data = {}
     var tileFeatures = this.tileFeatures[tile.uid]
     for (var layer in tileFeatures) {

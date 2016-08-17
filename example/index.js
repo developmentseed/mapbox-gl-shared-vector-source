@@ -65,7 +65,7 @@ function createMap () {
     })
   })
   .on('click', function () {
-    map.setFilter('states', ['<', '$id', 25])
+    map.setFilter('states', ['<', '$id', Math.random() > 0.5 ? 25 : 100])
   })
 
   setInterval(function () {
@@ -73,7 +73,8 @@ function createMap () {
     for (var i = 0; i < 100; i++) {
       data[i] = { x: Math.random() * 100 }
     }
+    console.log('update', data)
     map.getSource('us').update(data)
-  }, 500)
+  }, 1000)
   return map
 }
