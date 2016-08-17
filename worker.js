@@ -13,9 +13,9 @@ var cache = LRU({
 
 module.exports = SharedVectorWorker
 
-function SharedVectorWorker (actor, styleLayers) {
+function SharedVectorWorker (actor, style) {
   this.actor = actor
-  this.styleLayers = styleLayers
+  this.style = style
   this.loading = {}
   this.loaded = {}
 }
@@ -62,14 +62,15 @@ SharedVectorWorker.prototype = {
       if (cachedTile) {
         vt = new CachedVectorTile(cachedTile)
       } else {
-        vt = new VectorTile(new Protobuf(new Uint8Array(rawTileData)))
+        vt = new CachedVectorTile(new VectorTile(new Protobuf(new Uint8Array(rawTileData))))
+        console.log(vt.serialize())
         cache.set(params.url, {
-          tile: new CachedVectorTile(vt).serialize(),
+          tile: vt.serialize(),
           buffer: rawTileData.slice(0)
         })
       }
 
-      tile.parse(vt, this.styleLayers.getLayerFamilies(), this.actor, rawTileData, callback)
+      tile.parse(vt, this.style.getLayerFamilies(), this.actor, rawTileData, callback)
       this.loaded[source] = this.loaded[source] || {}
       this.loaded[source][uid] = tile
     }
@@ -82,10 +83,28 @@ SharedVectorWorker.prototype = {
       return callback()
     }
 
-    var layerFamilies = this.styleLayers.getLayerFamilies()
+    var layerFamilies = this.style.getLayerFamilies()
     var tile = this.loaded[source][uid]
-    debugger
-    tile.updateProperties(params.data, layerFamilies, this.actor, callback)
+
+    // we have params.propertyData, which maps feature ids to properties
+    // objects.
+    // transform it into an object mapping layer ids to (possibly sparse)
+    // arrays of updated feature properties
+    var propertyData = {}
+    var layers = tile.data.layers
+    for (var layerId in layers) {
+      propertyData[layerId] = []
+      for (var i = 0; i < layers[layerId].length; i++) {
+        var id = layers[layerId].feature(i).id
+        if (typeof id !== 'undefined' && params.propertyData[id]) {
+          propertyData[layerId].push(params.propertyData[id])
+        } else {
+          propertyData[layerId].push(null)
+        }
+      }
+    }
+
+    tile.updateProperties(propertyData, layerFamilies, this.actor, callback)
   },
 
   reloadTile: function (params, callback) {

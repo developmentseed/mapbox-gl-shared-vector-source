@@ -20,13 +20,12 @@ SharedVectorSource.workerSourceURL = URL.createObjectURL(worker)
 SharedVectorSource.prototype = util.inherit(VectorSource, {
   type: 'vector-shared-dynamic',
   update: function (data) {
-    this._dirty = true
     this._data = data
     this.fire('change')
   },
 
   loadTile: function (tile, callback) {
-    if (this._dirty && tile.state === 'reloading') {
+    if (this._data && tile.state === 'reloading') {
       return this.updateTile(tile, callback)
     }
 
@@ -73,6 +72,11 @@ SharedVectorSource.prototype = util.inherit(VectorSource, {
       this.vtLayers = new vt.VectorTile(new Protobuf(new Uint8Array(tile.rawTileData))).layers
 
       // store the feature id's for each feature in this vector tile.
+      // tileFeatures = {
+      //    [tile uid]: {
+      //        [vt layer id]: [feature id, feature id, ... ]
+      //    }
+      // }
       var layers = this.tileFeatures[tile.uid] = {}
       for (var id in this.vtLayers) {
         var features = layers[id] = []
@@ -88,31 +92,23 @@ SharedVectorSource.prototype = util.inherit(VectorSource, {
         tile.redoPlacement(this)
       }
 
+      if (this._data) {
+        this.updateTile(tile, callback)
+        return
+      }
+
       callback(null)
     }
   },
 
   updateTile: function (tile, callback) {
-    var data = {}
-    var tileFeatures = this.tileFeatures[tile.uid]
-    for (var layer in tileFeatures) {
-      data[layer] = []
-      for (var i = 0; i < tileFeatures[layer].length; i++) {
-        data[layer].push(this._data[tileFeatures[layer][i]])
-      }
-    }
-
     var params = {
       uid: tile.uid,
       source: this.id,
-      data: data
+      propertyData: this._filterPropertiesForTile(tile)
     }
 
-    if (typeof tile.workerID !== 'undefined') {
-      this.dispatcher.send(this.type + '.updateTile', params, done.bind(this), tile.workerID)
-    } else {
-      // load + update
-    }
+    this.dispatcher.send(this.type + '.updateTile', params, done.bind(this), tile.workerID)
 
     function done (err, data) {
       for (var i = 0; i < data.buckets.length; i++) {
@@ -122,5 +118,18 @@ SharedVectorSource.prototype = util.inherit(VectorSource, {
       }
       callback(err)
     }
+  },
+
+  _filterPropertiesForTile: function (tile) {
+    // copy the subset of the data needed for this tile
+    var data = {}
+    var tileFeatures = this.tileFeatures[tile.uid]
+    for (var layer in tileFeatures) {
+      for (var i = 0; i < tileFeatures[layer].length; i++) {
+        var id = tileFeatures[layer][i]
+        data[id] = this._data[id]
+      }
+    }
+    return data
   }
 })

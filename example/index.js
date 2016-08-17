@@ -45,7 +45,7 @@ function createMap () {
   .on('load', function () {
     map.addSource('us', {
       type: 'vector-shared-dynamic',
-      url: 'http://localhost:8080/index.json'
+      url: 'mapbox://devseed.wapo-2016-us-election'
     })
     map.addLayer({
       id: 'states',
@@ -64,14 +64,16 @@ function createMap () {
       }
     })
   })
-  .on('click', function (e) {
-    var f = map.queryRenderedFeatures(e.point, { layers: ['states'] })
-    if (!f[0]) return
-    f = f[0]
-    var data = {}
-    data[f.id] = { x: Math.random() * 100 }
-    map.getSource('us').update(data)
-    console.log(f)
+  .on('click', function () {
+    map.setFilter('states', ['<', '$id', 25])
   })
+
+  setInterval(function () {
+    var data = {}
+    for (var i = 0; i < 100; i++) {
+      data[i] = { x: Math.random() * 100 }
+    }
+    map.getSource('us').update(data)
+  }, 500)
   return map
 }
