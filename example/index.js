@@ -4,6 +4,9 @@ var SharedVectorSource = require('../')
 
 mapboxgl.accessToken = window.getAccessToken()
 mapboxgl.Source.addType('vector-shared-dynamic', SharedVectorSource)
+createMap()
+createMap()
+createMap()
 
 window.testHelpers = require('../test/helpers')
 var deepdiff = require('deep-diff').diff
@@ -17,9 +20,6 @@ window.diff = function (o1, o2) {
     }
   })
 }
-
-createMap(true)
-// window.addEventListener('click', function () { createMap(false) })
 
 function createMap () {
   var div = document.createElement('div')
